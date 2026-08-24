@@ -42,10 +42,10 @@ def convert():
         pdf.add_page()
         pdf.image(image, 0, 0, 210, 297)
 
-    output_path = os.path.join(session_folder, "hasil.pdf")
+    output_path = os.path.join(session_folder, "dan yap.pdf")
     pdf.output(output_path, "F")
 
-    return send_file(output_path, as_attachment=True, download_name="hasil.pdf")
+    return send_file(output_path, as_attachment=True, download_name="dan yap.pdf")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
