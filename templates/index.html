@@ -1,22 +1,338 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>JPG to PDF Converter</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 60px auto; text-align: center; }
-        h1 { color: #333; }
-        input[type="file"] { margin: 20px 0; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; }
-        button:hover { background: #1d4ed8; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPG → PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EDE7D9;
+    --paper-dim: #E2DBC9;
+    --ink: #22281F;
+    --ink-soft: #3A4335;
+    --cobalt: #2E4A7A;
+    --mustard: #D99A2B;
+    --mustard-dark: #B87F1C;
+    --sage: #5C7A5A;
+    --line: #C9C0A8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+
+  .stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-size: clamp(28px, 5vw, 40px);
+    color: var(--ink);
+    transform: rotate(-1.2deg);
+    border: 3px solid var(--ink);
+    padding: 10px 18px;
+    border-radius: 4px;
+    background: var(--paper-dim);
+  }
+
+  .stamp span { color: var(--cobalt); }
+
+  .lede {
+    margin: 20px 2px 40px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+
+  .lede strong { color: var(--ink); }
+
+  /* --- light table --- */
+  .table {
+    background: var(--ink);
+    border-radius: 14px;
+    padding: 28px 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sprockets {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6px;
+  }
+
+  .sprockets.bottom { margin-top: 18px; }
+
+  .sprockets span {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: rgba(237, 231, 217, 0.18);
+  }
+
+  .filmstrip {
+    margin: 16px 0 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+  }
+
+  .frame {
+    aspect-ratio: 3 / 4;
+    border: 1.5px dashed rgba(237, 231, 217, 0.28);
+    border-radius: 6px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    overflow: hidden;
+    background: rgba(237, 231, 217, 0.03);
+  }
+
+  .frame.filled {
+    border-style: solid;
+    border-color: var(--mustard);
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .frame .no {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: rgba(237, 231, 217, 0.55);
+    z-index: 2;
+  }
+
+  .frame.filled .no {
+    color: var(--mustard);
+    background: rgba(34, 40, 31, 0.65);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .dropzone {
+    margin-top: 6px;
+    border: 1.5px dashed rgba(237, 231, 217, 0.3);
+    border-radius: 8px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .dropzone:hover,
+  .dropzone.drag {
+    border-color: var(--mustard);
+    background: rgba(217, 154, 43, 0.06);
+  }
+
+  .dropzone p {
+    margin: 0;
+    color: rgba(237, 231, 217, 0.75);
+    font-size: 14px;
+  }
+
+  .dropzone .accent { color: var(--mustard); font-weight: 600; }
+
+  input[type="file"] { display: none; }
+
+  /* --- action row --- */
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .count {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .count b { color: var(--ink); }
+
+  button.convert {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--mustard);
+    color: var(--ink);
+    border: none;
+    padding: 14px 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  button.convert:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  button.convert:active:not(:disabled) {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  button.convert:disabled {
+    background: var(--line);
+    box-shadow: none;
+    cursor: not-allowed;
+    color: #8b8570;
+  }
+
+  button.convert:focus-visible {
+    outline: 3px solid var(--cobalt);
+    outline-offset: 2px;
+  }
+
+  .hint {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .foot {
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.03em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
 </head>
 <body>
-    <h1>JPG to PDF Converter</h1>
-    <p>Pilih beberapa gambar untuk digabung jadi satu PDF.</p>
-    <form action="/convert" method="post" enctype="multipart/form-data">
-        <input type="file" name="images" accept="image/jpeg,image/jpg" multiple required><br>
-        <button type="submit">Convert ke PDF</button>
-    </form>
+<div class="wrap">
+
+  <div class="stamp">JPG <span>→</span> PDF</div>
+  <p class="lede">
+    Arrange in page order. <strong>Click "Bind into PDF"</strong>, it will immediately direct you to the download.
+  </p>
+
+  <form id="convert-form" action="/convert" method="post" enctype="multipart/form-data">
+    <div class="table">
+      <div class="sprockets top">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="filmstrip" id="filmstrip"></div>
+
+      <label class="dropzone" id="dropzone" for="file-input">
+        <p><span class="accent">Click to select an image</span> or drag it here &mdash; JPG/JPEG, more than one is possible</p>
+      </label>
+      <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg" multiple required>
+
+      <div class="sprockets bottom">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button type="submit" class="convert" id="submit-btn" disabled>Bind into PDF</button>
+      <span class="count" id="count-label"><b>0</b> selected image</span>
+    </div>
+    <p class="hint">The order follows the sequence in which you select the files. Landscape photos are automatically rotated to portrait.</p>
+  </form>
+
+  <div class="foot">PDF Converter &middot; Free to use</div>
+</div>
+
+<script>
+  const input = document.getElementById('file-input');
+  const dropzone = document.getElementById('dropzone');
+  const filmstrip = document.getElementById('filmstrip');
+  const countLabel = document.getElementById('count-label');
+  const submitBtn = document.getElementById('submit-btn');
+  const form = document.getElementById('convert-form');
+
+  function renderFrames(files) {
+    filmstrip.innerHTML = '';
+    const list = Array.from(files);
+
+    list.forEach((file, i) => {
+      const frame = document.createElement('div');
+      frame.className = 'frame filled';
+
+      const no = document.createElement('span');
+      no.className = 'no';
+      no.textContent = String(i + 1).padStart(2, '0');
+      frame.appendChild(no);
+
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      frame.appendChild(img);
+
+      filmstrip.appendChild(frame);
+    });
+
+    countLabel.innerHTML = `<b>${list.length}</b> foto dipilih`;
+    submitBtn.disabled = list.length === 0;
+  }
+
+  input.addEventListener('change', () => renderFrames(input.files));
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.add('drag');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.remove('drag');
+    })
+  );
+
+  dropzone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files.length) {
+      input.files = files;
+      renderFrames(files);
+    }
+  });
+
+  form.addEventListener('submit', () => {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+  });
+</script>
 </body>
 </html>
