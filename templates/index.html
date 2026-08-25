@@ -1,22 +1,615 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>JPG to PDF Converter</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 60px auto; text-align: center; }
-        h1 { color: #333; }
-        input[type="file"] { margin: 20px 0; }
-        button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; }
-        button:hover { background: #1d4ed8; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>.pdf not pdf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  .preview-panel { margin-top: 32px; }
+
+  .preview-panel iframe {
+    width: 100%;
+    height: 70vh;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 14px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+ a.convert {
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+  }
+
+  .ghost-btn {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    padding: 13px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+  }
+
+  .ghost-btn:hover {
+    background: var(--paper-dim);
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .ghost-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  .ghost-btn:focus-visible {
+    outline: 3px solid var(--cobalt);
+    outline-offset: 2px;
+  }
+  :root {
+    --paper: #EDE7D9;
+    --paper-dim: #E2DBC9;
+    --ink: #22281F;
+    --ink-soft: #3A4335;
+    --cobalt: #2E4A7A;
+    --mustard: #D99A2B;
+    --mustard-dark: #B87F1C;
+    --sage: #5C7A5A;
+    --line: #C9C0A8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+
+  .stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-size: clamp(28px, 5vw, 40px);
+    color: var(--ink);
+    transform: rotate(-1.2deg);
+    border: 3px solid var(--ink);
+    padding: 10px 18px;
+    border-radius: 4px;
+    background: var(--paper-dim);
+  }
+
+  .stamp span { color: var(--cobalt); }
+
+  .lede {
+    margin: 20px 2px 40px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+
+  .lede strong { color: var(--ink); }
+
+  /* --- light table --- */
+  .table {
+    background: var(--ink);
+    border-radius: 14px;
+    padding: 28px 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sprockets {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6px;
+  }
+
+  .sprockets.bottom { margin-top: 18px; }
+
+  .sprockets span {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: rgba(237, 231, 217, 0.18);
+  }
+
+  .filmstrip {
+    margin: 16px 0 4px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+  }
+
+  .frame {
+    aspect-ratio: 3 / 4;
+    border: 1.5px dashed rgba(237, 231, 217, 0.28);
+    border-radius: 6px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    overflow: hidden;
+    background: rgba(237, 231, 217, 0.03);
+  }
+
+  .frame.filled {
+    border-style: solid;
+    border-color: var(--mustard);
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .frame .no {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: rgba(237, 231, 217, 0.55);
+    z-index: 2;
+  }
+
+  .frame.filled .no {
+    color: var(--mustard);
+    background: rgba(34, 40, 31, 0.65);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .frame .orientation-btn {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    background: rgba(34, 40, 31, 0.75);
+    color: var(--mustard);
+    border: 1px solid var(--mustard);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    z-index: 3;
+    transition: background 0.15s ease;
+  }
+
+  .frame .orientation-btn:hover {
+    background: var(--mustard);
+    color: var(--ink);
+  }
+
+  .frame .delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+
+  .frame .delete-btn:hover {
+    background: #e74c3c;
+  }
+
+  .frame.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+    border-color: var(--mustard);
+  }
+
+  .frame.drag-over {
+    transform: scale(1.05);
+    border-color: var(--cobalt);
+    background: rgba(46, 74, 122, 0.15);
+  }
+
+  .dropzone.drag {
+    background-color: rgba(237, 231, 217, 0.05);
+    border-color: var(--mustard);
+  }
+
+  .dropzone {
+    margin-top: 6px;
+    border: 1.5px dashed rgba(237, 231, 217, 0.3);
+    border-radius: 8px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .dropzone:hover,
+  .dropzone.drag {
+    border-color: var(--mustard);
+    background: rgba(217, 154, 43, 0.06);
+  }
+
+  .dropzone p {
+    margin: 0;
+    color: rgba(237, 231, 217, 0.75);
+    font-size: 14px;
+  }
+
+  .dropzone .accent {
+      color: var(--mustard);
+      font-weight: 600;
+  }
+
+  .dropzone * {
+    pointer-events: none;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* --- action row --- */
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .count {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .count b { color: var(--ink); }
+
+  .convert {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--mustard);
+    color: var(--ink);
+    border: none;
+    padding: 14px 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .convert:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .convert:active:not(:disabled) {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  .convert:disabled {
+    background: var(--line);
+    box-shadow: none;
+    cursor: not-allowed;
+    color: #8b8570;
+  }
+
+  .convert:focus-visible {
+    outline: 3px solid var(--cobalt);
+    outline-offset: 2px;
+  }
+
+  .hint {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .foot {
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.03em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
 </head>
 <body>
-    <h1>JPG to PDF Converter</h1>
-    <p>Pilih beberapa gambar untuk digabung jadi satu PDF.</p>
-    <form action="/convert" method="post" enctype="multipart/form-data">
-        <input type="file" name="images" accept="image/jpeg,image/jpg" multiple required><br>
-        <button type="submit">Convert ke PDF</button>
-    </form>
+<div class="wrap">
+
+  <div class="stamp">.pdf <span>not</span> pdf</div>
+  <p class="lede">
+    <strong>Hey, g'day mate!!</strong>
+  </p>
+
+  <form id="convert-form" action="/convert" method="post" enctype="multipart/form-data">
+    <div class="table">
+      <div class="sprockets top">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="filmstrip" id="filmstrip"></div>
+
+      <div class="dropzone" id="dropzone">
+        <p><span class="accent">Click to select an image</span> or <span class="accent">drag it here</span> (JPG/JPEG, more than one is possible)</p>
+      </div>
+      <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg" multiple required>
+
+      <div class="sprockets bottom">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button type="submit" class="convert" id="submit-btn" disabled>Preview PDF</button>
+      <span class="count" id="count-label"><b>0</b> selected image</span>
+    </div>
+    <p class="hint">Touch and hold the number to arrange the image.</p>
+  </form>
+
+  <div class="preview-panel" id="preview-panel" hidden>
+  <iframe id="pdf-frame" title="Preview PDF"></iframe>
+  <div class="preview-actions">
+    <a id="download-link" class="convert" download>Download PDF</a>
+    <button type="button" class="ghost-btn" id="back-btn">Rearrange</button>
+  </div>
+</div>
+
+  <div class="foot">PDF Converter &middot; Free to use</div>
+</div>
+
+<script>
+  const input = document.getElementById('file-input');
+  const dropzone = document.getElementById('dropzone');
+  const filmstrip = document.getElementById('filmstrip');
+  const countLabel = document.getElementById('count-label');
+  const submitBtn = document.getElementById('submit-btn');
+  const form = document.getElementById('convert-form');
+
+  let list = [];
+  let draggedIndex = null;
+
+  function renderFrames() {
+    filmstrip.innerHTML = '';
+
+    list.forEach((file, i) => {
+      if (!file.orientation) file.orientation = 'portrait';
+
+      const frame = document.createElement('div');
+      frame.className = 'frame filled';
+      frame.draggable = true;
+      frame.dataset.index = i;
+
+      frame.addEventListener('dragstart', (e) => {
+          draggedIndex = i;
+          setTimeout(() => frame.classList.add('dragging'), 0);
+      });
+
+      frame.addEventListener('dragend', () => {
+          frame.classList.remove('dragging');
+          document.querySelectorAll('.frame').forEach(f => f.classList.remove('drag-over'));
+      });
+
+      frame.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          frame.classList.add('drag-over');
+      });
+
+      frame.addEventListener('dragleave', () => {
+          frame.classList.remove('drag-over');
+      });
+
+      frame.addEventListener('drop', (e) => {
+          e.preventDefault();
+          frame.classList.remove('drag-over');
+
+          const targetIndex = i;
+          if (draggedIndex !== null && draggedIndex !== targetIndex) {
+              const movedItem = list.splice(draggedIndex, 1)[0];
+              list.splice(targetIndex, 0, movedItem);
+
+              const dt = new DataTransfer();
+              list.forEach(f => dt.items.add(f));
+              input.files = dt.files;
+
+          renderFrames();
+          }
+        });
+
+        const no = document.createElement('span');
+        no.className = 'no';
+        no.textContent = String(i + 1).padStart(2, '0');
+        frame.appendChild(no);
+
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        frame.appendChild(img);
+
+        const orientBtn = document.createElement('button');
+        orientBtn.type = 'button';
+        orientBtn.className = 'orientation-btn';
+        orientBtn.textContent = file.orientation.toUpperCase();
+
+        orientBtn.onclick = (e) => {
+            e.stopPropagation();
+            file.orientation = file.orientation === 'portrait' ? 'landscape' : 'portrait';
+            renderFrames();
+        };
+        frame.appendChild(orientBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeImage(i);
+        };
+        frame.appendChild(deleteBtn);
+
+        filmstrip.appendChild(frame);
+      });
+
+      countLabel.innerHTML = `<b>${list.length}</b> selected image${list.length === 1 ? '' : 's'}`;
+      submitBtn.disabled = list.length === 0;
+    }
+
+  function removeImage(index) {
+      list.splice(index, 1);
+
+      const dt = new DataTransfer();
+      list.forEach(file => dt.items.add(file));
+      input.files = dt.files;
+
+      renderFrames();
+  }
+
+  function handleNewFiles(newFiles) {
+    const newArray = Array.from(newFiles).filter(f => f.type.match('image.*'));
+      
+    const detectPromises = newArray.map(file => new Promise(resolve => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        file.orientation = img.naturalWidth > img.naturalHeight ? 'landscape' : 'portrait';
+        URL.revokeObjectURL(url);
+        resolve();
+      };
+      img.onerror = () => {
+        file.orientation = 'portrait';
+        resolve();
+      };
+      img.src = url;
+    }));
+
+    Promise.all(detectPromises).then(() => {
+      list.push(...newArray);
+
+      const dt = new DataTransfer();
+      list.forEach(file => dt.items.add(file));
+      input.files = dt.files;
+
+      renderFrames();
+    });
+  }
+
+  dropzone.addEventListener('click', () => {
+      input.click();
+  });
+
+  input.addEventListener('change', () => {
+      if (input.files && input.files.length) {
+          handleNewFiles(input.files);
+      }
+  });
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.add('drag');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.remove('drag');
+    })
+  );
+
+  dropzone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files.length) {
+      handleNewFiles(files);
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    document.querySelectorAll('input[name="orientations"]').forEach(el => el.remove());
+    list.forEach(file => {
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'orientations';
+      hiddenInput.value = file.orientation;
+      form.appendChild(hiddenInput);
+    });
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+
+    const formData = new FormData(form);
+
+    try {
+        const res = await fetch('/convert', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.error || 'Failed to process PDF');
+            return;
+        }
+
+        document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
+        document.getElementById('download-link').href = `/download/${data.session_id}`;
+        document.getElementById('preview-panel').hidden = false;
+        document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        alert('There is an error: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Bind into PDF';
+    }
+ });
+
+ document.getElementById('back-btn').addEventListener('click', () => {
+   document.getElementById('preview-panel').hidden = true;
+ });
+
+</script>
 </body>
 </html>
