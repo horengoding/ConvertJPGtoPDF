@@ -9,17 +9,39 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+import time
+import shutil
+
+def cleanup_old_sessions(max_age_hours=1):
+    now = time.time()
+    max_age_seconds = max_age_hours * 3600
+
+    if not os.path.exists(UPLOAD_FOLDER):
+        return
+
+    for session_name in os.listdir(UPLOAD_FOLDER):
+        session_path = os.path.join(UPLOAD_FOLDER, session_name)
+        if os.path.isdir(session_path):
+            folder_age = now - os.path.getmtime(session_path)
+            if folder_age > max_age_seconds:
+                try:
+                    shutil.rmtree(session_path)
+                    print(f"Cleaned up old session: {session_name}")
+                except Exception as e:
+                    print(f"Failed to clean up {session_name}: {e}")
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
 @app.route("/convert", methods=["POST"])
 def convert():
+    cleanup_old_sessions(max_age_hours=1)
     files = request.files.getlist("images")
     orientations = request.form.getlist("orientations")
 
     if not files or files[0].filename == "":
-        return jsonify({"error": "Tidak ada gambar yang diupload"}), 400
+        return jsonify({"error": "No image has been uploaded"}), 400
 
     session_id = str(uuid.uuid4())
     session_folder = os.path.join(UPLOAD_FOLDER, session_id)
@@ -52,7 +74,7 @@ def convert():
         else:
             pdf.image(image_path, x=10, y=10, w=190)
 
-    output_path = os.path.join(session_folder, "hasil.pdf")
+    output_path = os.path.join(session_folder, "dan-yap.pdf")
     pdf.output(output_path, "F")
 
     return jsonify({"session_id": session_id})
@@ -60,18 +82,18 @@ def convert():
 
 @app.route("/preview/<session_id>")
 def preview(session_id):
-    path = os.path.join(UPLOAD_FOLDER, session_id, "hasil.pdf")
+    path = os.path.join(UPLOAD_FOLDER, session_id, "dan-yap.pdf")
     if not os.path.exists(path):
-        return "PDF tidak ditemukan", 404
+        return "PDF not found", 404
     return send_file(path, mimetype="application/pdf")
 
 
 @app.route("/download/<session_id>")
 def download(session_id):
-    path = os.path.join(UPLOAD_FOLDER, session_id, "hasil.pdf")
+    path = os.path.join(UPLOAD_FOLDER, session_id, "dan-yap.pdf")
     if not os.path.exists(path):
-        return "PDF tidak ditemukan", 404
-    return send_file(path, as_attachment=True, download_name="hasil.pdf")
+        return "PDF not found", 404
+    return send_file(path, as_attachment=True, download_name="dan-yap.pdf")
 
 
 if __name__ == "__main__":
