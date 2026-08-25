@@ -8,8 +8,8 @@ imagelist = []                                                 # Contains the li
 
 # --------------- USER INPUT -------------------- #
 
-folder = "C:\\Users\\USER\\Pictures\\cth\\"                                                    # Folder containing all the images.
-name = "output.pdf"                                                      # Name of the output PDF file.
+folder = ""                                                    # Folder containing all the images.
+name = ""                                                      # Name of the output PDF file.
 
 
 # ------------- ADD ALL THE IMAGES IN A LIST ------------- #
