@@ -1,16 +1,16 @@
 # JPG to PDF Converter
 
-A simple web app that bundles multiple photos into a single PDF — arrange the page order, set each photo's orientation, preview the result, then download.
+A simple web app that bundles multiple photos into a single PDF. Arrange the page order, set each photo's orientation, preview the result, then download.
 
 Live demo: https://calicocalpico.pythonanywhere.com
 
 ## Features
 
 - **Drag & drop or click to upload** multiple JPG/JPEG images at once.
-- **Reorder by drag-and-drop** — the filmstrip shows numbered frames; drag a frame to change its position in the final PDF.
-- **Automatic orientation detection** — each photo's page orientation (portrait/landscape) is detected from its actual width/height on upload, with a manual toggle button to override per photo.
+- **Reorder by drag-and-drop** the filmstrip shows numbered frames; drag a frame to change its position in the final PDF.
+- **Automatic orientation detection** each photo's page orientation (portrait/landscape) is detected from its actual width/height on upload, with a manual toggle button to override per photo.
 - **Delete individual photos** before converting.
-- **Preview before download** — the generated PDF is shown inline (desktop) with a "Open in new tab" fallback for mobile browsers that don't render PDFs inside an iframe.
+- **Preview before download** the generated PDF is shown inline (desktop) with a "Open in new tab" fallback for mobile browsers that don't render PDFs inside an iframe.
 - Responsive light-table / film-strip themed UI.
 
 ## Tech Stack
@@ -52,8 +52,8 @@ Open http://localhost:5000 in your browser.
 
 1. Select or drag in one or more JPG/JPEG images.
 2. Reorder them by dragging frames in the filmstrip; toggle each frame's orientation if the auto-detected one isn't right.
-3. Click **Bind into PDF** — the backend saves the images, rotates/normalizes them, and builds a PDF page-by-page matching each photo's chosen orientation.
-4. The PDF opens in an inline preview with **Download PDF** and **Open in new tab** options.
+3. Click **Preview PDF** the backend saves the images, rotates/normalizes them, and builds a PDF page-by-page matching each photo's chosen orientation.
+4. The PDF opens in an inline preview with **Download PDF**, **Open in new tab** and **Arrange** options.
 
 ## Deployment
 
@@ -70,5 +70,5 @@ Free-tier PythonAnywhere sites need a login + "Run until..." click roughly once 
 
 ## Notes
 
-- Uploaded images and generated PDFs are stored per-session under `uploads/<uuid>/` on the server. These aren't automatically cleaned up — clear the folder occasionally if disk usage grows.
+- Uploaded images and generated PDFs are stored per-session under `uploads/<uuid>/` on the server. These are automatically cleaned up clear the folder after 1 hour occasionally if disk usage grows.
 - Mobile browsers often can't render a PDF inside an `<iframe>`; the "Open in new tab" button is a fallback, though some mobile browsers will auto-download instead of previewing.
