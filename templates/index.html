@@ -44,6 +44,9 @@
     cursor: pointer;
     box-shadow: 3px 3px 0 var(--ink);
     transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
   }
 
   .ghost-btn:hover {
@@ -395,6 +398,7 @@
   <iframe id="pdf-frame" title="Preview PDF"></iframe>
   <div class="preview-actions">
     <a id="download-link" class="convert" download>Download PDF</a>
+    <a id="open-tab-link" class="ghost-btn" target="_blank" rel="noopener">Open in new tab</a>
     <button type="button" class="ghost-btn" id="back-btn">Rearrange</button>
   </div>
 </div>
@@ -596,6 +600,7 @@
 
         document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
         document.getElementById('download-link').href = `/download/${data.session_id}`;
+        document.getElementById('open-tab-link').href = `/preview/${data.session_id}`;
         document.getElementById('preview-panel').hidden = false;
         document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
       } catch (err) {
