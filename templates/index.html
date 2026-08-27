@@ -512,7 +512,7 @@
       renderFrames();
   }
 
-  const MAX_TOTAL_SIZE = 1 * 1024 * 1024; // 20 MB
+  const MAX_TOTAL_SIZE = 20 * 1024 * 1024; // 20 MB
   
   function handleNewFiles(newFiles) {
     const newArray = Array.from(newFiles).filter(f => f.type.match('image.*'));
