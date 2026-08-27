@@ -512,9 +512,19 @@
       renderFrames();
   }
 
+  const MAX_TOTAL_SIZE = 1 * 1024 * 1024; // 20 MB
+  
   function handleNewFiles(newFiles) {
     const newArray = Array.from(newFiles).filter(f => f.type.match('image.*'));
-      
+    
+    const currentTotal = list.reduce((sum, f) => sum + f.size, 0);
+    const newTotal = newArray.reduce((sum, f) => sum + f.size, 0);
+    
+    if (currentTotal + newTotal > MAX_TOTAL_SIZE) {
+      alert('The total file size more than 20MB limit. Try reducing the number or size of the photos.');
+      return;
+    }
+
     const detectPromises = newArray.map(file => new Promise(resolve => {
       const img = new Image();
       const url = URL.createObjectURL(file);
