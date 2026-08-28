@@ -3,8 +3,12 @@ from fpdf import FPDF
 from PIL import Image
 import os
 import uuid
+import mammoth
+from xhtml2pdf import pisa
+from io import BytesIO
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -80,6 +84,42 @@ def convert():
     return jsonify({"session_id": session_id})
 
 
+@app.route("/convert-docx", methods=["POST"])
+def convert_docx():
+    cleanup_old_sessions()
+
+    file = request.files.get("docfile")
+    if not file or file.filename == "":
+        return jsonify({"error": "No document file has been uploaded"}), 400
+    
+    if not file.filename.lower().endswith(".docx"):
+        return jsonify({"error": "Only .docx files are supported (not old .doc files)"}), 400
+
+    session_id = str(uuid.uuid4())
+    session_folder = os.path.join(UPLOAD_FOLDER, session_id)
+    os.makedirs(session_folder, exist_ok=True)
+
+    docx_path = os.path.join(session_folder, "input.docx")
+    file.save(docx_path)
+
+    try:
+        with open(docx_path, "rb") as docx_file:
+            result = mammoth.convert_to_html(docx_file)
+            html_content = result.value
+
+        output_path = os.path.join(session_folder, "dan-yap.pdf")
+        with open(output_path, "wb") as pdf_file:
+            pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
+
+        if pisa_status.err:
+            return jsonify({"error": "Failed to convert DOCX to PDF"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"An error occurred during conversion: {(e)}"}), 500
+
+    return jsonify({"session_id": session_id})    
+
+    
 @app.route("/preview/<session_id>")
 def preview(session_id):
     path = os.path.join(UPLOAD_FOLDER, session_id, "dan-yap.pdf")
@@ -94,6 +134,11 @@ def download(session_id):
     if not os.path.exists(path):
         return "PDF not found", 404
     return send_file(path, as_attachment=True, download_name="dan-yap.pdf")
+
+
+@app.errorhandler(413)
+def file_too_large(e):
+    return jsonify({"error": "The total file size more than 20MB limit. Try reducing the number or size of the photos."}), 413
 
 
 if __name__ == "__main__":

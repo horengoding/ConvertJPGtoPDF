@@ -7,6 +7,28 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  .divider-label {
+    text-align: center;
+    margin: 32px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .docx-table {
+    padding: 20px;
+  }
+
+  .docx-filename {
+    margin: 10px 2px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--mustard);
+    text-align: center;
+  }
+
   .preview-panel { margin-top: 32px; }
 
   .preview-panel iframe {
@@ -394,6 +416,31 @@
     <p class="hint">Touch and hold the number to arrange the image.</p>
   </form>
 
+<div class="divider-label">or</div>
+
+  <form id="docx-form" action="/convert-docx" method="post" enctype="multipart/form-data">
+    <div class="table">
+      <div class="sprockets top">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    
+    <div class="dropzone" id="docx-dropzone" style="margin-top: 40px;">
+      <p><span class="accent">Click to select a document</span> or <span class="accent">drag it here</span> &mdash; .docx only</p>
+    </div>
+    <input type="file" id="docx-input" name="docfile" accept=".docx" required>
+
+    <p class="docx-filename" id="docx-filename"></p>
+
+    <div class="sprockets bottom">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+    <div class="action-row">
+      <button type="submit" class="convert" id="docx-submit-btn" disabled>Convert to PDF</button>
+    </div>
+</form>
+
   <div class="preview-panel" id="preview-panel" hidden>
   <iframe id="pdf-frame" title="Preview PDF"></iframe>
   <div class="preview-actions">
@@ -624,6 +671,84 @@
  document.getElementById('back-btn').addEventListener('click', () => {
    document.getElementById('preview-panel').hidden = true;
  });
+
+  const docxForm = document.getElementById('docx-form');
+  const docxInput = document.getElementById('docx-input');
+  const docxDropzone = document.getElementById('docx-dropzone');
+  const docxFilename = document.getElementById('docx-filename');
+  const docxSubmitBtn = document.getElementById('docx-submit-btn');
+
+  docxDropzone.addEventListener('click', () => docxInput.click());
+
+  function handleDocxFile(file) {
+  if (!file.name.toLowerCase().endsWith('.docx')) {
+    alert('Please select a valid .docx file.');
+    return;
+  }
+  docxFilename.textContent = file.name;
+  docxSubmitBtn.disabled = false;
+
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  docxInput.files = dt.files;
+}
+
+  docxInput.addEventListener('change', () => {
+    if (docxInput.files && docxInput.files.length) {
+      handleDocxFile(docxInput.files[0]);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    docxDropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      docxDropzone.classList.add('drag');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    docxDropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      docxDropzone.classList.remove('drag');
+    })
+  );
+
+  docxDropzone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files.length) {
+      handleDocxFile(files[0]);
+    }
+  });
+
+  docxForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    docxSubmitBtn.disabled = true;
+    docxSubmitBtn.textContent = 'Processing...';
+
+    const formData = new FormData(docxForm);
+
+    try {
+        const res = await fetch('/convert-docx', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.error || 'Failed to convert DOCX to PDF');
+            return;
+        }
+
+        document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
+        document.getElementById('download-link').href = `/download/${data.session_id}`;
+        document.getElementById('open-tab-link').href = `/preview/${data.session_id}`;
+        document.getElementById('preview-panel').hidden = false;
+        document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        alert('There is an error: ' + err.message);
+      } finally {
+        docxSubmitBtn.disabled = false;
+        docxSubmitBtn.textContent = 'Convert to PDF';
+    }
+  });
 
 </script>
 </body>
