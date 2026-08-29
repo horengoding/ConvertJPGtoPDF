@@ -1,4 +1,4 @@
-# JPG to PDF Converter
+# PDF Tools
 
 **v1.5** A simple web toolkit for converting, merging, and compressing PDFs (bundle multiple photos into a single PDF, merge existing PDFs together, and shrink file sizes when needed).
 
