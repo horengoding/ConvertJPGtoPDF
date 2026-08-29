@@ -1,35 +1,52 @@
 # JPG to PDF Converter
 
-A simple web app that bundles multiple photos into a single PDF. Arrange the page order, set each photo's orientation, preview the result, then download.
+**v1.5** A simple web toolkit for converting, merging, and compressing PDFs (bundle multiple photos into a single PDF, merge existing PDFs together, and shrink file sizes when needed).
 
 Live demo: https://calicocalpico.pythonanywhere.com
 
 ## Features
 
-- **Drag & drop or click to upload** multiple JPG/JPEG images at once.
+### Image to PDF
+- **Drag & drop or click to upload** multiple JPG/JPEG/PNG images at once.
 - **Reorder by drag-and-drop** the filmstrip shows numbered frames; drag a frame to change its position in the final PDF.
 - **Automatic orientation detection** each photo's page orientation (portrait/landscape) is detected from its actual width/height on upload, with a manual toggle button to override per photo.
 - **Delete individual photos** before converting.
-- **Preview before download** the generated PDF is shown inline (desktop) with a "Open in new tab" fallback for mobile browsers that don't render PDFs inside an iframe.
-- Responsive light-table / film-strip themed UI.
+- **Transparent PNGs** are automatically flattened onto a white background.
+- **20MB total upload limit**, enforced on both frontend and backend.
+
+### Merge PDF
+- Upload two or more existing PDF files and combine them into a single PDF, in the order selected.
+
+### Compress PDF
+- Available from the preview panel after any conversion or merge.
+- Re-encodes embedded images at a lower quality to shrink file size, showing a before/after size comparison.
+
+### Preview & Download
+- The generated PDF is shown inline (desktop) with an "Open in new tab" fallback for mobile browsers that don't render PDFs inside an iframe.
+- Separate download links for the original and compressed versions.
+
+### Housekeeping
+- **Auto-cleanup** session folders older than 1 hour are automatically deleted on each new conversion, keeping disk usage in check.
 
 ## Tech Stack
 
 - [Flask](https://flask.palletsprojects.com/) — web server
-- [fpdf](https://pyfpdf.readthedocs.io/) — PDF generation
+- [fpdf](https://pyfpdf.readthedocs.io/) — PDF generation from images
 - [Pillow (PIL)](https://python-pillow.org/) — image processing
+- [pypdf](https://pypdf.readthedocs.io/) — merging PDFs
+- [pikepdf](https://pikepdf.readthedocs.io/) — PDF compression (image re-encoding)
 - [Gunicorn](https://gunicorn.org/) — production WSGI server
 - Vanilla HTML/CSS/JS on the frontend (no framework)
 
 ## Project Structure
 
 ```
-app.py                  # Flask app: upload, convert, preview, download routes
+app.py                  # Flask app: upload, convert, merge, compress, preview, download routes
 templates/
-  index.html             # Upload UI, filmstrip, preview panel
+  index.html             # Upload UI, filmstrip, merge dropzone, preview panel
 requirements.txt         # Python dependencies
 Procfile                 # Process command for platform deploys (gunicorn app:app)
-uploads/                 # Generated per-session folders (images + hasil.pdf) — gitignored in practice
+uploads/                 # Generated per-session folders (gitignored, auto-cleaned)
 ```
 
 ## Getting Started
@@ -50,10 +67,11 @@ Open http://localhost:5000 in your browser.
 
 ## How It Works
 
-1. Select or drag in one or more JPG/JPEG images.
-2. Reorder them by dragging frames in the filmstrip; toggle each frame's orientation if the auto-detected one isn't right.
-3. Click **Preview PDF** the backend saves the images, rotates/normalizes them, and builds a PDF page-by-page matching each photo's chosen orientation.
-4. The PDF opens in an inline preview with **Download PDF**, **Open in new tab** and **Arrange** options.
+**Image to PDF:** select or drag in JPG/PNG images, reorder and set orientation as needed, then click **Bind into PDF**. The backend normalizes each image (flattening transparency, converting to RGB) and builds a PDF page-by-page.
+
+**Merge PDF:** select two or more PDF files, click **Merge PDFs** pages are combined in the order the files were added.
+
+**Compress PDF:** after any conversion or merge, click **Compress PDF** in the preview panel to re-encode embedded images at reduced quality and see the size savings.
 
 ## Deployment
 
@@ -70,5 +88,18 @@ Free-tier PythonAnywhere sites need a login + "Run until..." click roughly once 
 
 ## Notes
 
-- Uploaded images and generated PDFs are stored per-session under `uploads/<uuid>/` on the server. These are automatically cleaned up clear the folder after 1 hour occasionally if disk usage grows.
+- Uploaded files and generated PDFs are stored per-session under `uploads/<uuid>/` and auto-deleted after 1 hour.
 - Mobile browsers often can't render a PDF inside an `<iframe>`; the "Open in new tab" button is a fallback, though some mobile browsers will auto-download instead of previewing.
+- Compression works by re-encoding embedded JPEG images at lower quality — it's most effective on image-heavy PDFs and has little effect on text-only documents.
+
+## Changelog
+
+### v1.5
+- Added PNG upload support (with transparency flattening)
+- Added Merge PDF feature (combine multiple PDFs into one)
+- Added Compress PDF feature (reduce file size via image re-encoding)
+- Added auto-cleanup for session folders older than 1 hour
+- Added 20MB total upload limit
+
+### v1.0
+- Initial release: JPG to PDF conversion with drag-and-drop reordering, per-photo orientation control, and inline PDF preview before download
