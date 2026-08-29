@@ -7,6 +7,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  .compress-info {
+    margin-top: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--sage);
+  }
+
+  .compress-info a {
+    color: var(--sage);
+    font-weight: 700;
+  }
+
   .divider-label {
     text-align: center;
     margin: 32px 0;
@@ -17,11 +29,7 @@
     letter-spacing: 0.1em;
   }
 
-  .docx-table {
-    padding: 20px;
-  }
-
-  .docx-filename {
+  .merge-filename {
     margin: 10px 2px 0;
     font-family: 'Space Mono', monospace;
     font-size: 12px;
@@ -388,7 +396,8 @@
 
   <div class="stamp">.pdf <span>not</span> pdf</div>
   <p class="lede">
-    <strong>Hey, g'day mate!!</strong>
+    <strong>Hey, g'day mate!!</strong><br>
+    Your simple toolkit for converting, merging, and compressing PDFs.
   </p>
 
   <form id="convert-form" action="/convert" method="post" enctype="multipart/form-data">
@@ -400,9 +409,9 @@
       <div class="filmstrip" id="filmstrip"></div>
 
       <div class="dropzone" id="dropzone">
-        <p><span class="accent">Click to select an image</span> or <span class="accent">drag it here</span> (JPG/JPEG, more than one is possible)</p>
+        <p><span class="accent">Click to select an image</span> or <span class="accent">drag it here</span> (JPG/JPEG/PNG, more than one is possible)</p>
       </div>
-      <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg" multiple required>
+      <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg,image/png" multiple required>
 
       <div class="sprockets bottom">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
@@ -418,18 +427,18 @@
 
 <div class="divider-label">or</div>
 
-  <form id="docx-form" action="/convert-docx" method="post" enctype="multipart/form-data">
+  <form id="merge-form" action="/merge-pdf" method="post" enctype="multipart/form-data">
     <div class="table">
       <div class="sprockets top">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
     
-    <div class="dropzone" id="docx-dropzone" style="margin-top: 40px;">
-      <p><span class="accent">Click to select a document</span> or <span class="accent">drag it here</span> &mdash; .docx only</p>
+    <div class="dropzone" id="merge-dropzone" for="merge-input" style="margin-top: 40px;">
+      <p><span class="accent">Click to select PDFs</span> or <span class="accent">drag it here</span> &mdash; 2+ .pdf files</p>
     </div>
-    <input type="file" id="docx-input" name="docfile" accept=".docx" required>
+    <input type="file" id="merge-input" name="pdffiles" accept=".pdf" multiple required>
 
-    <p class="docx-filename" id="docx-filename"></p>
+    <p class="merge-filename" id="merge-filenames"></p>
 
     <div class="sprockets bottom">
       <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
@@ -437,7 +446,7 @@
   </div>
 
     <div class="action-row">
-      <button type="submit" class="convert" id="docx-submit-btn" disabled>Convert to PDF</button>
+      <button type="submit" class="convert" id="merge-submit-btn" disabled>Merge PDF</button>
     </div>
 </form>
 
@@ -445,12 +454,14 @@
   <iframe id="pdf-frame" title="Preview PDF"></iframe>
   <div class="preview-actions">
     <a id="download-link" class="convert" download>Download PDF</a>
+    <button type="button" class="ghost-btn" id="compress-btn">Compress PDF</button>   
     <a id="open-tab-link" class="ghost-btn" target="_blank" rel="noopener">Open in new tab</a>
     <button type="button" class="ghost-btn" id="back-btn">Rearrange</button>
   </div>
+  <p class="compress-info" id="compress-info" hidden></p>
 </div>
 
-  <div class="foot">PDF Converter &middot; Free to use</div>
+  <div class="foot">PDF Tools &middot; Free to use</div>
 </div>
 
 <script>
@@ -655,6 +666,7 @@
             return;
         }
 
+        currentSessionId = data.session_id;
         document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
         document.getElementById('download-link').href = `/download/${data.session_id}`;
         document.getElementById('open-tab-link').href = `/preview/${data.session_id}`;
@@ -672,71 +684,79 @@
    document.getElementById('preview-panel').hidden = true;
  });
 
-  const docxForm = document.getElementById('docx-form');
-  const docxInput = document.getElementById('docx-input');
-  const docxDropzone = document.getElementById('docx-dropzone');
-  const docxFilename = document.getElementById('docx-filename');
-  const docxSubmitBtn = document.getElementById('docx-submit-btn');
+  const mergeForm = document.getElementById('merge-form');
+  const mergeInput = document.getElementById('merge-input');
+  const mergeDropzone = document.getElementById('merge-dropzone');
+  const mergeFilenames = document.getElementById('merge-filenames');
+  const mergeSubmitBtn = document.getElementById('merge-submit-btn');
 
-  docxDropzone.addEventListener('click', () => docxInput.click());
+  let mergeFileList = [];
 
-  function handleDocxFile(file) {
-  if (!file.name.toLowerCase().endsWith('.docx')) {
-    alert('Please select a valid .docx file.');
-    return;
+  mergeDropzone.addEventListener('click', () => mergeInput.click());
+
+  function handleMergeFiles(files) {
+    const newArray = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+
+    if (newArray.length === 0) {
+      alert('Please select valid .pdf files.');
+      return;
+    }
+
+    mergeFileList.push(...newArray);
+
+    const dt = new DataTransfer();
+    mergeFileList.forEach(f => dt.items.add(f));
+    mergeInput.files = dt.files;
+
+    mergeFilenames.textContent = mergeFileList.map(f => f.name).join(', ');
+    mergeSubmitBtn.disabled = mergeFileList.length < 2;
   }
-  docxFilename.textContent = file.name;
-  docxSubmitBtn.disabled = false;
 
-  const dt = new DataTransfer();
-  dt.items.add(file);
-  docxInput.files = dt.files;
-}
-
-  docxInput.addEventListener('change', () => {
-    if (docxInput.files && docxInput.files.length) {
-      handleDocxFile(docxInput.files[0]);
+  mergeInput.addEventListener('change', () => {
+    if (mergeInput.files && mergeInput.files.length) {
+      handleMergeFiles(mergeInput.files);
     }
   });
 
   ['dragenter', 'dragover'].forEach(evt =>
-    docxDropzone.addEventListener(evt, e => {
+    mergeDropzone.addEventListener(evt, e => {
       e.preventDefault();
-      docxDropzone.classList.add('drag');
+      mergeDropzone.classList.add('drag');
     })
   );
 
   ['dragleave', 'drop'].forEach(evt =>
-    docxDropzone.addEventListener(evt, e => {
+    mergeDropzone.addEventListener(evt, e => {
       e.preventDefault();
-      docxDropzone.classList.remove('drag');
+      mergeDropzone.classList.remove('drag');
     })
   );
 
-  docxDropzone.addEventListener('drop', e => {
+  mergeDropzone.addEventListener('drop', e => {
     const files = e.dataTransfer.files;
     if (files && files.length) {
-      handleDocxFile(files[0]);
+      handleMergeFiles(files);
     }
   });
 
-  docxForm.addEventListener('submit', async (e) => {
+  mergeForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    docxSubmitBtn.disabled = true;
-    docxSubmitBtn.textContent = 'Processing...';
+    mergeSubmitBtn.disabled = true;
+    mergeSubmitBtn.textContent = 'Merging...';
 
-    const formData = new FormData(docxForm);
+    const formData = new FormData(mergeForm);
 
     try {
-        const res = await fetch('/convert-docx', { method: 'POST', body: formData });
+        const res = await fetch('/merge-pdf', { method: 'POST', body: formData });
         const data = await res.json();
 
         if (!res.ok) {
-            alert(data.error || 'Failed to convert DOCX to PDF');
+            alert(data.error || 'Failed to merge PDFs');
             return;
         }
 
+        currentSessionId = data.session_id;
         document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
         document.getElementById('download-link').href = `/download/${data.session_id}`;
         document.getElementById('open-tab-link').href = `/preview/${data.session_id}`;
@@ -745,11 +765,47 @@
       } catch (err) {
         alert('There is an error: ' + err.message);
       } finally {
-        docxSubmitBtn.disabled = false;
-        docxSubmitBtn.textContent = 'Convert to PDF';
+        mergeSubmitBtn.disabled = false;
+        mergeSubmitBtn.textContent = 'Merge PDFs';
     }
   });
 
+  let currentSessionId = null;
+
+  const compressBtn = document.getElementById('compress-btn');
+  const compressInfo = document.getElementById('compress-info');
+
+  function formatBytes(bytes) {
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  compressBtn.addEventListener('click', async () => {
+    if (!currentSessionId) return;
+
+    compressBtn.disabled = true;
+    compressBtn.textContent = 'Compressing...';
+    compressInfo.hidden = true;
+
+    try {
+      const res = await fetch(`/compress/${currentSessionId}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to compress PDF');
+        return;
+    }
+
+    const savedPercent = Math.round((1 - data.compressed_size / data.original_size) * 100);
+
+    compressInfo.innerHTML = `${formatBytes(data.original_size)} → ${formatBytes(data.compressed_size)} (${savedPercent}% smaller). <a href="/download-compressed/${data.session_id}" download>Download compressed PDF</a>`;
+    compressInfo.hidden = false;
+  } catch (err) {
+    alert('Error: ' + err.message);
+    } finally {
+      compressBtn.disabled = false;
+      compressBtn.textContent = 'Compress PDF';
+    }
+  });
 </script>
 </body>
 </html>

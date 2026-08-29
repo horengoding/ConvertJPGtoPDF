@@ -3,9 +3,11 @@ from fpdf import FPDF
 from PIL import Image
 import os
 import uuid
-import mammoth
-from xhtml2pdf import pisa
+from pypdf import PdfWriter
 from io import BytesIO
+import pikepdf
+from PIL import Image as PILImage
+from pikepdf import PdfImage
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
@@ -53,13 +55,18 @@ def convert():
 
     imagelist = []
     for i, file in enumerate(files):
-        ext = os.path.splitext(file.filename)[1] or ".jpg"
-        save_path = os.path.join(session_folder, f"{i}{ext}")
+        save_path = os.path.join(session_folder, f"{i}.jpg")
         file.save(save_path)
 
         try:
             im = Image.open(save_path)
-            im = im.convert("RGB")
+            if im.mode in ("RGBA", "LA", "P"):
+                background = Image.new("RGB", im.size, (255, 255, 255))
+                im = im.convert("RGBA")
+                background.paste(im, mask=im.split()[-1])
+                im = background
+            else:
+                im = im.convert("RGB")
             im.save(save_path, "JPEG")
             im.close()
         except Exception as e:
@@ -84,40 +91,40 @@ def convert():
     return jsonify({"session_id": session_id})
 
 
-@app.route("/convert-docx", methods=["POST"])
-def convert_docx():
+@app.route("/merge-pdf", methods=["POST"])
+def merge_pdf():
     cleanup_old_sessions()
 
-    file = request.files.get("docfile")
-    if not file or file.filename == "":
-        return jsonify({"error": "No document file has been uploaded"}), 400
-    
-    if not file.filename.lower().endswith(".docx"):
-        return jsonify({"error": "Only .docx files are supported (not old .doc files)"}), 400
+    files = request.files.getlist("pdffiles")
+
+    if not files or len(files) < 2:
+        return jsonify({"error": "Please upload at least 2 PDF files to merge"}), 400
+
+    for file in files:
+        if not file.filename.lower().endswith(".pdf"):
+            return jsonify({"error": f"'{file.filename}' is not a PDF file"}), 400
 
     session_id = str(uuid.uuid4())
     session_folder = os.path.join(UPLOAD_FOLDER, session_id)
     os.makedirs(session_folder, exist_ok=True)
 
-    docx_path = os.path.join(session_folder, "input.docx")
-    file.save(docx_path)
-
     try:
-        with open(docx_path, "rb") as docx_file:
-            result = mammoth.convert_to_html(docx_file)
-            html_content = result.value
+        writer = PdfWriter()
+
+        for file in files:
+            temp_path = os.path.join(session_folder, file.filename)
+            file.save(temp_path)
+            writer.append(temp_path)
 
         output_path = os.path.join(session_folder, "dan-yap.pdf")
-        with open(output_path, "wb") as pdf_file:
-            pisa_status = pisa.CreatePDF(html_content, dest=pdf_file)
-
-        if pisa_status.err:
-            return jsonify({"error": "Failed to convert DOCX to PDF"}), 500
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        writer.close()
 
     except Exception as e:
-        return jsonify({"error": f"An error occurred during conversion: {(e)}"}), 500
+        return jsonify({"error": f"Failed to merge PDFs: {e}"}), 500
 
-    return jsonify({"session_id": session_id})    
+    return jsonify({"session_id": session_id})
 
     
 @app.route("/preview/<session_id>")
@@ -140,6 +147,59 @@ def download(session_id):
 def file_too_large(e):
     return jsonify({"error": "The total file size more than 20MB limit. Try reducing the number or size of the photos."}), 413
 
+
+@app.route("/compress/<session_id>")
+def compress(session_id):
+    original_path = os.path.join(UPLOAD_FOLDER, session_id, "dan-yap.pdf")
+
+    if not os.path.exists(original_path):
+        return jsonify({"error": "PDF not found"}), 404
+
+    compressed_path = os.path.join(os.path.dirname(original_path), "compressed.pdf")
+
+    try:
+        pdf = pikepdf.open(original_path)
+
+        for page in pdf.pages:
+            for image_key in list(page.images.keys()):
+                raw_image = page.images[image_key]
+                try:
+                    pdf_image = PdfImage(raw_image)
+                    pil_image = pdf_image.as_pil_image()
+                    if pil_image.mode != "RGB":
+                        pil_image = pil_image.convert("RGB")
+
+                    buffer = BytesIO()
+                    pil_image.save(buffer, format="JPEG", quality=50, optimize=True)
+                    buffer.seek(0)
+
+                    raw_image.write(buffer.read(), filter=pikepdf.Name("/DCTDecode"))
+                except Exception as img_err:
+                    print(f"Skip compressing one image: {img_err}")
+                    continue
+
+        pdf.save(compressed_path, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate)
+        pdf.close()
+
+    except Exception as e:
+        return jsonify({"error": f"Compression failed: {e}"}), 500
+
+    original_size = os.path.getsize(original_path)
+    compressed_size = os.path.getsize(compressed_path)
+
+    return jsonify({
+        "session_id": session_id,
+        "original_size": original_size,
+        "compressed_size": compressed_size
+    })
+
+
+@app.route("/download-compressed/<session_id>")
+def download_compressed(session_id):
+    path = os.path.join(UPLOAD_FOLDER, session_id, "compressed.pdf")
+    if not os.path.exists(path):
+        return "Compressed PDF not found", 404
+    return send_file(path, as_attachment=True, download_name="compressed.pdf")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
