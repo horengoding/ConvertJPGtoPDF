@@ -7,6 +7,124 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  .lang-toggle {
+    position: absolute;
+    top: 20px;
+    right: 76px;
+    background: var(--paper-dim);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .theme-toggle {
+    right: 20px;
+    padding: 6px 10px;
+  }
+
+  .lang-toggle:hover {
+    background: var(--mustard);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 560px) {
+    .menu-grid { grid-template-columns: 1fr; }
+  }
+
+  .menu-card {
+    background: var(--table-bg);
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 18px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .menu-card:hover {
+    border-color: var(--mustard);
+    transform: translateY(-2px);
+  }
+
+  .menu-card-title {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--mustard);
+    margin-bottom: 6px;
+  }
+
+  .menu-card-desc {
+    display: block;
+    font-size: 13px;
+    color: rgba(237, 231, 217, 0.75);
+    line-height: 1.4;
+  }
+
+  .back-to-menu {
+    background: none;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 18px;
+  }
+
+  .back-to-menu:hover { color: var(--ink); }
+
+  .tool-section { margin-top: 8px; }
+
+/* Loading spinner */
+  .loader {
+    width: 16px;
+    aspect-ratio: 1;
+    display: inline-grid;
+    border-radius: 50%;
+    background:
+      linear-gradient(0deg, rgba(34,40,31,0.5) 30%, #0000 0 70%, rgba(34,40,31,1) 0) 50%/8% 100%,
+      linear-gradient(90deg, rgba(34,40,31,0.25) 30%, #0000 0 70%, rgba(34,40,31,0.75) 0) 50%/100% 8%;
+    background-repeat: no-repeat;
+    animation: l23 1s infinite steps(12);
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  .loader::before,
+  .loader::after {
+    content: "";
+    grid-area: 1/1;
+    border-radius: 50%;
+    background: inherit;
+    opacity: 0.915;
+    transform: rotate(30deg);
+  }
+
+  .loader::after {
+    opacity: 0.83;
+    transform: rotate(60deg);
+  }
+
+  @keyframes l23 {
+    100% { transform: rotate(1turn); }
+  }
+
   .compress-info {
     margin-top: 14px;
     font-family: 'Space Mono', monospace;
@@ -94,6 +212,7 @@
     outline: 3px solid var(--cobalt);
     outline-offset: 2px;
   }
+
   :root {
     --paper: #EDE7D9;
     --paper-dim: #E2DBC9;
@@ -104,6 +223,20 @@
     --mustard-dark: #B87F1C;
     --sage: #5C7A5A;
     --line: #C9C0A8;
+    --btn-ink: #22281F;
+    --table-bg: #22281F;
+  }
+
+  [data-theme="dark"] {
+    --paper: #1E201A;
+    --paper-dim: #14150F;
+    --ink: #EDE7D9;
+    --ink-soft: #B9B6A8;
+    --line: #3A3A32;
+  }
+
+  [data-theme="dark"] .table {
+    border: 1px solid rgba(237, 231, 217, 0.08);
   }
 
   * { box-sizing: border-box; }
@@ -120,6 +253,7 @@
     max-width: 720px;
     margin: 0 auto;
     padding: 48px 20px 80px;
+    position: relative;
   }
 
   .stamp {
@@ -152,7 +286,7 @@
 
   /* --- light table --- */
   .table {
-    background: var(--ink);
+    background: var(--table-bg);
     border-radius: 14px;
     padding: 28px 22px 24px;
     position: relative;
@@ -339,7 +473,7 @@
     letter-spacing: 0.03em;
     text-transform: uppercase;
     background: var(--mustard);
-    color: var(--ink);
+    color: var(--btn-ink);
     border: none;
     padding: 14px 26px;
     border-radius: 6px;
@@ -394,74 +528,92 @@
 <body>
 <div class="wrap">
 
+  <button type="button" id="lang-toggle" class="lang-toggle">🇬🇧 EN</button>
+  <button type="button" id="theme-toggle" class="lang-toggle theme-toggle">🌙</button>
+
   <div class="stamp">.pdf <span>not</span> pdf</div>
   <p class="lede">
-    <strong>Hey, g'day mate!!</strong><br>
-    Your simple toolkit for converting, merging, and compressing PDFs.
+    <strong data-i18n="greeting">Hey, g'day mate!!</strong><br>
+    <span data-i18n="tagline">Your simple toolkit for converting, merging, and compressing PDFs.</span>
   </p>
 
-  <form id="convert-form" action="/convert" method="post" enctype="multipart/form-data">
-    <div class="table">
-      <div class="sprockets top">
-        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  <div class="menu-grid" id="menu-grid">
+    <button type="button" class="menu-card" data-target="convert-section">
+      <span class="menu-card-title" data-i18n="menu1-title">Convert Photos to PDF</span>
+      <span class="menu-card-desc" data-i18n="menu1-desc">Turn JPG/PNG photos into one PDF document.</span>
+    </button>
+    <button type="button" class="menu-card" data-target="merge-section">
+      <span class="menu-card-title" data-i18n="menu2-title">Merge PDFs</span>
+      <span class="menu-card-desc" data-i18n="menu2-desc">Combine two or more PDFs into one file.</span>
+    </button>
+  </div>
+
+  <button type="button" class="back-to-menu" id="back-to-menu" hidden>&larr; <span data-i18n="back-menu">Back to menu</span></button>
+
+  <div id="convert-section" class="tool-section" hidden>
+    <form id="convert-form" action="/convert" method="post" enctype="multipart/form-data">
+      <div class="table">
+        <div class="sprockets top">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="filmstrip" id="filmstrip"></div>
+
+        <div class="dropzone" id="dropzone">
+          <p><span class="accent" data-i18n="click-select-img">Click to select an image</span> <span data-i18n="or-word">or</span> <span class="accent" data-i18n="drag-here">drag it here</span> <span data-i18n="jpg-hint">(JPG/JPEG/PNG, more than one is possible)</span></p>
+        </div>
+        <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg,image/png" multiple required>
+
+        <div class="sprockets bottom">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
       </div>
 
-      <div class="filmstrip" id="filmstrip"></div>
-
-      <div class="dropzone" id="dropzone">
-        <p><span class="accent">Click to select an image</span> or <span class="accent">drag it here</span> (JPG/JPEG/PNG, more than one is possible)</p>
+      <div class="action-row">
+        <button type="submit" class="convert" id="submit-btn" disabled>Preview PDF</button>
+        <span class="count" id="count-label"><b>0</b> selected image</span>
       </div>
-      <input type="file" id="file-input" name="images" accept="image/jpeg,image/jpg,image/png" multiple required>
+      <p class="hint" data-i18n="arrange-hint">Touch and hold the number to arrange the image.</p>
+    </form>
+  </div>
+
+  <div id="merge-section" class="tool-section" hidden>
+    <form id="merge-form" action="/merge-pdf" method="post" enctype="multipart/form-data">
+      <div class="table">
+        <div class="sprockets top">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+    
+      <div class="dropzone" id="merge-dropzone" for="merge-input" style="margin-top: 40px;">
+        <p><span class="accent" data-i18n="click-select-pdf">Click to select PDFs</span> <span data-i18n="or-word">or</span> <span class="accent" data-i18n="drag-here">drag it here</span> <span data-i18n="pdf-hint">&mdash; 2+ .pdf files</span></p>
+      </div>
+      <input type="file" id="merge-input" name="pdffiles" accept=".pdf" multiple required>
+
+      <p class="merge-filename" id="merge-filenames"></p>
 
       <div class="sprockets bottom">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
     </div>
 
-    <div class="action-row">
-      <button type="submit" class="convert" id="submit-btn" disabled>Preview PDF</button>
-      <span class="count" id="count-label"><b>0</b> selected image</span>
-    </div>
-    <p class="hint">Touch and hold the number to arrange the image.</p>
-  </form>
-
-<div class="divider-label">or</div>
-
-  <form id="merge-form" action="/merge-pdf" method="post" enctype="multipart/form-data">
-    <div class="table">
-      <div class="sprockets top">
-        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <div class="action-row">
+        <button type="submit" class="convert" id="merge-submit-btn" disabled>Merge PDF</button>
       </div>
-    
-    <div class="dropzone" id="merge-dropzone" for="merge-input" style="margin-top: 40px;">
-      <p><span class="accent">Click to select PDFs</span> or <span class="accent">drag it here</span> &mdash; 2+ .pdf files</p>
-    </div>
-    <input type="file" id="merge-input" name="pdffiles" accept=".pdf" multiple required>
-
-    <p class="merge-filename" id="merge-filenames"></p>
-
-    <div class="sprockets bottom">
-      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-    </div>
-  </div>
-
-    <div class="action-row">
-      <button type="submit" class="convert" id="merge-submit-btn" disabled>Merge PDF</button>
-    </div>
-</form>
+  </form>
+</div>
 
   <div class="preview-panel" id="preview-panel" hidden>
   <iframe id="pdf-frame" title="Preview PDF"></iframe>
   <div class="preview-actions">
     <a id="download-link" class="convert" download>Download PDF</a>
-    <button type="button" class="ghost-btn" id="compress-btn">Compress PDF</button>   
-    <a id="open-tab-link" class="ghost-btn" target="_blank" rel="noopener">Open in new tab</a>
-    <button type="button" class="ghost-btn" id="back-btn">Rearrange</button>
+    <button type="button" class="ghost-btn" id="compress-btn" data-i18n="compress">Compress PDF</button>   
+    <a id="open-tab-link" class="ghost-btn" target="_blank" rel="noopener" data-i18n="open-tab">Open in new tab</a>
+    <button type="button" class="ghost-btn" id="back-btn" data-i18n="rearrange">Rearrange</button>
   </div>
   <p class="compress-info" id="compress-info" hidden></p>
 </div>
 
-  <div class="foot">PDF Tools &middot; Free to use</div>
+  <div class="foot"><span data-i18n="footer">PDF Tools &middot; Free to use</span></div>
 </div>
 
 <script>
@@ -652,8 +804,7 @@
       form.appendChild(hiddenInput);
     });
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Processing...';
+    setButtonLoading(submitBtn, true, 'Processing...', 'Bind into PDF');
 
     const formData = new FormData(form);
 
@@ -675,10 +826,9 @@
       } catch (err) {
         alert('There is an error: ' + err.message);
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Bind into PDF';
-    }
- });
+        setButtonLoading(submitBtn, false, 'Bind into PDF', 'Bind into PDF');
+      }
+    });
 
  document.getElementById('back-btn').addEventListener('click', () => {
    document.getElementById('preview-panel').hidden = true;
@@ -765,8 +915,7 @@
       } catch (err) {
         alert('There is an error: ' + err.message);
       } finally {
-        mergeSubmitBtn.disabled = false;
-        mergeSubmitBtn.textContent = 'Merge PDFs';
+        setButtonLoading(mergeSubmitBtn, false, 'Merge PDF', 'Merge PDF');
     }
   });
 
@@ -802,10 +951,126 @@
   } catch (err) {
     alert('Error: ' + err.message);
     } finally {
-      compressBtn.disabled = false;
-      compressBtn.textContent = 'Compress PDF';
+      setButtonLoading(compressBtn, false, 'Compress PDF', 'Compress PDF');
     }
   });
+
+  const menuGrid = document.getElementById('menu-grid');
+  const backToMenu = document.getElementById('back-to-menu');
+  const toolSections = document.querySelectorAll('.tool-section');
+
+  menuGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('.menu-card');
+    if (!card) return;
+
+    const targetId = card.dataset.target;
+    menuGrid.hidden = true;
+    backToMenu.hidden = false;
+    toolSections.forEach(sec => sec.hidden = sec.id !== targetId);
+  });
+
+  backToMenu.addEventListener('click', () => {
+    menuGrid.hidden = false;
+    backToMenu.hidden = true;
+    toolSections.forEach(sec => sec.hidden = true);
+    document.getElementById('preview-panel').hidden = true;
+  });
+
+  function setButtonLoading(button, isLoading, loadingText, normalText) {
+    if (isLoading) {
+      button.disabled = true;
+      button.innerHTML = `<span class="loader"></span>${loadingText}`;
+    } else {
+      button.disabled = false;
+      button.textContent = normalText;
+    }
+  }
+
+  const translations = {
+    en: {
+      "greeting": "Hey, g'day mate!!",
+      "tagline": "Your simple toolkit for converting, merging, and compressing PDFs.",
+      "menu1-title": "Convert Photos to PDF",
+      "menu1-desc": "Turn JPG/PNG photos into one PDF document.",
+      "menu2-title": "Merge PDFs",
+      "menu2-desc": "Combine two or more PDFs into one file.",
+      "back-menu": "Back to menu",
+      "click-select-img": "Click to select an image",
+      "or-word": "or",
+      "drag-here": "drag it here",
+      "jpg-hint": "(JPG/JPEG/PNG, more than one is possible)",
+      "arrange-hint": "Touch and hold the number to arrange the image.",
+      "click-select-pdf": "Click to select PDFs",
+      "pdf-hint": "— 2+ .pdf files",
+      "open-tab": "Open in new tab",
+      "rearrange": "Rearrange",
+      "footer": "PDF Tools · Free to use"
+    },
+    id: {
+      "greeting": "Hai, apa kabar!",
+      "tagline": "Toolkit sederhana untuk convert, gabung, dan kompres PDF.",
+      "menu1-title": "Ubah Foto ke PDF",
+      "menu1-desc": "Ubah foto JPG/PNG jadi satu dokumen PDF.",
+      "menu2-title": "Gabung PDF",
+      "menu2-desc": "Gabungkan dua atau lebih PDF jadi satu file.",
+      "back-menu": "Kembali ke menu",
+      "click-select-img": "Klik untuk pilih gambar",
+      "or-word": "atau",
+      "drag-here": "seret ke sini",
+      "jpg-hint": "(JPG/JPEG/PNG, boleh lebih dari satu)",
+      "arrange-hint": "Tekan dan tahan angka untuk mengatur urutan gambar.",
+      "click-select-pdf": "Klik untuk pilih PDF",
+      "pdf-hint": "— 2+ file .pdf",
+      "open-tab": "Buka di tab baru",
+      "rearrange": "Susun ulang",
+      "footer": "PDF Tools · Gratis digunakan"
+    }
+  };
+
+  let currentLang = localStorage.getItem('lang') || 'en';
+
+  const langToggle = document.getElementById('lang-toggle');
+
+  function applyLanguage(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang][key]) {
+        el.textContent = translations[lang][key];
+      }
+    });
+
+    langToggle.textContent = lang === 'en' ? '🇬🇧 EN' : '🇮🇩 ID';
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+  }
+
+  langToggle.addEventListener('click', () => {
+    applyLanguage(currentLang === 'en' ? 'id' : 'en');
+  });
+
+  applyLanguage(currentLang);
+
+  const themeToggle = document.getElementById('theme-toggle');
+
+  let currentTheme = localStorage.getItem('theme') || 'light';
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.textContent = '☀️';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+    }
+    currentTheme = theme;
+    localStorage.setItem('theme', theme);
+  }
+
+  themeToggle.addEventListener('click', () => {
+    applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+  });
+
+  applyTheme(currentTheme);
 </script>
 </body>
 </html>
