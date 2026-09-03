@@ -523,6 +523,24 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
+
+  @media (max-width: 560px) {
+    .lang-toggle {
+      top: auto;
+      bottom: calc(100% - 48px);
+      right: 70px;
+    }
+
+    .theme-toggle {
+      top: auto;
+      bottom: calc(100% - 48px);
+      right: 20px;
+    }
+
+   .wrap {
+      padding-top: 70px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -545,6 +563,10 @@
     <button type="button" class="menu-card" data-target="merge-section">
       <span class="menu-card-title" data-i18n="menu2-title">Merge PDFs</span>
       <span class="menu-card-desc" data-i18n="menu2-desc">Combine two or more PDFs into one file.</span>
+    </button>
+    <button type="button" class="menu-card" data-target="compress-section">
+      <span class="menu-card-title" data-i18n="menu3-title">Compress PDF</span>
+      <span class="menu-card-desc" data-i18n="menu3-desc">Shrink an existing PDF's file size.</span>
     </button>
   </div>
 
@@ -583,8 +605,10 @@
         <div class="sprockets top">
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
+
+        <div class="filmstrip" id="filmstrip"></div>
     
-      <div class="dropzone" id="merge-dropzone" for="merge-input" style="margin-top: 40px;">
+      <div class="dropzone" id="merge-dropzone">
         <p><span class="accent" data-i18n="click-select-pdf">Click to select PDFs</span> <span data-i18n="or-word">or</span> <span class="accent" data-i18n="drag-here">drag it here</span> <span data-i18n="pdf-hint">&mdash; 2+ .pdf files</span></p>
       </div>
       <input type="file" id="merge-input" name="pdffiles" accept=".pdf" multiple required>
@@ -599,6 +623,32 @@
       <div class="action-row">
         <button type="submit" class="convert" id="merge-submit-btn" disabled>Merge PDF</button>
       </div>
+  </form>
+</div>
+
+  <div id="compress-section" class="tool-section" hidden>
+  <form id="compress-form" action="/compress-upload" method="post" enctype="multipart/form-data">
+    <div class="table">
+      <div class="sprockets top">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+        <div class="filmstrip" id="filmstrip"></div>
+
+      <div class="dropzone" id="compress-dropzone">
+        <p><span class="accent" data-i18n="click-select-pdf">Click to select PDFs</span> <span data-i18n="or-word">or</span> <span class="accent" data-i18n="drag-here">drag it here</span> <span data-i18n="one-pdf-hint">— 1 .pdf file</span></p>
+      </div>
+      <input type="file" id="compress-input" name="pdffile" accept=".pdf" required>
+      <p class="merge-filename" id="compress-filename"></p>
+
+      <div class="sprockets bottom">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button type="submit" class="convert" id="compress-upload-btn" disabled data-i18n="compress-pdf-btn">Compress PDF</button>
+    </div>
   </form>
 </div>
 
@@ -994,6 +1044,8 @@
       "menu1-desc": "Turn JPG/PNG photos into one PDF document.",
       "menu2-title": "Merge PDFs",
       "menu2-desc": "Combine two or more PDFs into one file.",
+      "menu3-title": "Compress PDF",
+      "menu3-desc": "Shrink an existing PDF's file size.",
       "back-menu": "Back to menu",
       "click-select-img": "Click to select an image",
       "or-word": "or",
@@ -1004,6 +1056,8 @@
       "pdf-hint": "— 2+ .pdf files",
       "open-tab": "Open in new tab",
       "rearrange": "Rearrange",
+      "one-pdf-hint": "— 1 .pdf file",
+      "compress-pdf-btn": "Compress PDF",
       "footer": "PDF Tools · Free to use"
     },
     id: {
@@ -1013,6 +1067,8 @@
       "menu1-desc": "Ubah foto JPG/PNG jadi satu dokumen PDF.",
       "menu2-title": "Gabung PDF",
       "menu2-desc": "Gabungkan dua atau lebih PDF jadi satu file.",
+      "menu3-title": "Kompres PDF",
+      "menu3-desc": "Perkecil ukuran file PDF yang sudah ada.",
       "back-menu": "Kembali ke menu",
       "click-select-img": "Klik untuk pilih gambar",
       "or-word": "atau",
@@ -1023,6 +1079,8 @@
       "pdf-hint": "— 2+ file .pdf",
       "open-tab": "Buka di tab baru",
       "rearrange": "Susun ulang",
+      "one-pdf-hint": "— 1 file .pdf",
+      "compress-pdf-btn": "Kompres PDF",
       "footer": "PDF Tools · Gratis digunakan"
     }
   };
@@ -1071,6 +1129,83 @@
   });
 
   applyTheme(currentTheme);
+
+  const compressForm = document.getElementById('compress-form');
+  const compressInput = document.getElementById('compress-input');
+  const compressDropzone = document.getElementById('compress-dropzone');
+  const compressFilename = document.getElementById('compress-filename');
+  const compressUploadBtn = document.getElementById('compress-upload-btn');
+
+  compressDropzone.addEventListener('click', () => compressInput.click());
+
+  function handleCompressFile(file) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please select a valid .pdf file.');
+      return;
+    }
+    compressFilename.textContent = file.name;
+    compressUploadBtn.disabled = false;
+
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    compressInput.files = dt.files;
+  }
+
+  compressInput.addEventListener('change', () => {
+    if (compressInput.files && compressInput.files.length) {
+      handleCompressFile(compressInput.files[0]);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    compressDropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      compressDropzone.classList.add('drag');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    compressDropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      compressDropzone.classList.remove('drag');
+    })
+  );
+
+  compressDropzone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files.length) {
+      handleCompressFile(files[0]);
+    }
+  });
+
+  compressForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    setButtonLoading(compressUploadBtn, true, 'Uploading...', 'Compress PDF');
+
+    const formData = new FormData(compressForm);
+
+    try {
+      const res = await fetch('/compress-upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to upload PDF');
+        return;
+      }
+
+      currentSessionId = data.session_id;
+      document.getElementById('pdf-frame').src = `/preview/${data.session_id}`;
+      document.getElementById('download-link').href = `/download/${data.session_id}`;
+      document.getElementById('open-tab-link').href = `/preview/${data.session_id}`;
+      document.getElementById('preview-panel').hidden = false;
+      document.getElementById('preview-panel').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      alert('There is an error: ' + err.message);
+    } finally {
+      setButtonLoading(compressUploadBtn, false, 'Compress PDF', 'Compress PDF');
+    }
+  });
 </script>
 </body>
 </html>

@@ -148,6 +148,27 @@ def file_too_large(e):
     return jsonify({"error": "The total file size more than 20MB limit. Try reducing the number or size of the photos."}), 413
 
 
+@app.route("/compress-upload", methods=["POST"])
+def compress_upload():
+    cleanup_old_sessions()
+
+    file = request.files.get("pdffile")
+    if not file or file.filename == "":
+        return jsonify({"error": "No PDF file has been uploaded"}), 400
+
+    if not file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Only .pdf files are supported"}), 400
+
+    session_id = str(uuid.uuid4())
+    session_folder = os.path.join(UPLOAD_FOLDER, session_id)
+    os.makedirs(session_folder, exist_ok=True)
+
+    original_path = os.path.join(session_folder, "dan-yap.pdf")
+    file.save(original_path)
+
+    return jsonify({"session_id": session_id})
+
+    
 @app.route("/compress/<session_id>")
 def compress(session_id):
     original_path = os.path.join(UPLOAD_FOLDER, session_id, "dan-yap.pdf")

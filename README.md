@@ -1,6 +1,6 @@
 # PDF Tools
 
-**v1.5** A simple web toolkit for converting, merging, and compressing PDFs (bundle multiple photos into a single PDF, merge existing PDFs together, and shrink file sizes when needed).
+**v1.6** A simple web toolkit for converting, merging, and compressing PDFs (bundle multiple photos into a single PDF, merge existing PDFs together, and shrink file sizes when needed).
 
 Live demo: https://calicocalpico.pythonanywhere.com
 
@@ -27,6 +27,12 @@ Live demo: https://calicocalpico.pythonanywhere.com
 
 ### Housekeeping
 - **Auto-cleanup** session folders older than 1 hour are automatically deleted on each new conversion, keeping disk usage in check.
+
+### Interface
+- **Feature menu** on load lets users pick between Image-to-PDF and Merge PDF, instead of showing both tools at once.
+- **Loading spinners** on action buttons during conversion, merging, and compression.
+- **English/Indonesian language toggle**, remembered across visits.
+- **Light/dark mode toggle**, remembered across visits.
 
 ## Tech Stack
 
@@ -90,9 +96,17 @@ Free-tier PythonAnywhere sites need a login + "Run until..." click roughly once 
 
 - Uploaded files and generated PDFs are stored per-session under `uploads/<uuid>/` and auto-deleted after 1 hour.
 - Mobile browsers often can't render a PDF inside an `<iframe>`; the "Open in new tab" button is a fallback, though some mobile browsers will auto-download instead of previewing.
-- Compression works by re-encoding embedded JPEG images at lower quality — it's most effective on image-heavy PDFs and has little effect on text-only documents.
+- Compression works by re-encoding embedded JPEG images at lower quality, it's most effective on image-heavy PDFs and has little effect on text-only documents.
 
 ## Changelog
+
+### v1.6
+- Added a feature menu on load, separating Image-to-PDF and Merge PDF into distinct entry points
+- Added standalone Compress PDF feature (upload any existing PDF to compress directly)
+- Added loading spinners on action buttons
+- Added English/Indonesian language toggle
+- Added light/dark mode toggle
+- Fixed mobile layout: language and theme toggles no longer overlap the header
 
 ### v1.5
 - Added PNG upload support (with transparency flattening)
