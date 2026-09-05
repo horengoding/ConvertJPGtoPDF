@@ -117,3 +117,6 @@ Free-tier PythonAnywhere sites need a login + "Run until..." click roughly once 
 
 ### v1.0
 - Initial release: JPG to PDF conversion with drag-and-drop reordering, per-photo orientation control, and inline PDF preview before download
+
+---
+This project was originally inspired by / based on JPG-to-PDF by praneetk2704, with additional modifications and features developed for this web application.
